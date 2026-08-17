@@ -73,9 +73,9 @@ class SparkPapiClient:
         try:
             if not service.is_registered("spark"):
                 return SparkPapiMetrics()
-            tps = service.set_placeholders(None, "{spark.tps_5s}")
-            mspt = service.set_placeholders(None, "{spark.tickduration_10s}")
-            process_cpu = service.set_placeholders(None, "{spark.cpu_process_10s}")
+            tps = service.set_placeholders(None, "{spark:tps_5s}")
+            mspt = service.set_placeholders(None, "{spark:tickduration_10s}")
+            process_cpu = service.set_placeholders(None, "{spark:cpu_process_10s}")
             return SparkPapiMetrics(
                 available=True,
                 tps_5s=_parse_tps(tps),

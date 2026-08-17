@@ -61,9 +61,9 @@ class SparkPapiClientTest(unittest.TestCase):
     def test_reads_real_public_placeholder_results(self) -> None:
         service = FakePlaceholderAPI(
             {
-                "{spark.tps_5s}": "§a*20.0",
-                "{spark.tickduration_10s}": "§a1.2§7/§a2.3§7/§e40.0§7/§c55.0",
-                "{spark.cpu_process_10s}": "§e67%",
+                "{spark:tps_5s}": "§a*20.0",
+                "{spark:tickduration_10s}": "§a1.2§7/§a2.3§7/§e40.0§7/§c55.0",
+                "{spark:cpu_process_10s}": "§e67%",
             }
         )
         server = FakeServer(service)
@@ -77,9 +77,9 @@ class SparkPapiClientTest(unittest.TestCase):
         self.assertEqual(
             service.requests,
             [
-                (None, "{spark.tps_5s}"),
-                (None, "{spark.tickduration_10s}"),
-                (None, "{spark.cpu_process_10s}"),
+                (None, "{spark:tps_5s}"),
+                (None, "{spark:tickduration_10s}"),
+                (None, "{spark:cpu_process_10s}"),
             ],
         )
 
@@ -103,13 +103,13 @@ class SparkPapiClientTest(unittest.TestCase):
         self.assertIsNone(unresolved.process_cpu_10s_percent)
 
     def test_reloads_after_retained_service_becomes_inactive(self) -> None:
-        old = FakePlaceholderAPI({"{spark.tps_5s}": "§a19.9"})
+        old = FakePlaceholderAPI({"{spark:tps_5s}": "§a19.9"})
         server = FakeServer(old)
         client = SparkPapiClient()
         self.assertEqual(client.read(server).tps_5s, 19.9)
 
         old.active = False
-        replacement = FakePlaceholderAPI({"{spark.tps_5s}": "§a18.5"})
+        replacement = FakePlaceholderAPI({"{spark:tps_5s}": "§a18.5"})
         server.service_manager.service = replacement
         self.assertEqual(client.read(server).tps_5s, 18.5)
         self.assertGreaterEqual(server.service_manager.loads, 2)

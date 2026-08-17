@@ -36,12 +36,12 @@ For optional Spark metrics, install compatible builds of:
 - Endstone PlaceholderAPI (`papi`)
 - Spark for Endstone with the `spark` expansion
 
-The integration uses PAPI's strict dot-separated syntax:
+The integration uses PAPI's colon-separated namespace syntax:
 
 ```text
-{spark.tps_5s}
-{spark.tickduration_10s}
-{spark.cpu_process_10s}
+{spark:tps_5s}
+{spark:tickduration_10s}
+{spark:cpu_process_10s}
 ```
 
 If PAPI is absent, inactive, or the `spark` expansion is not registered, the
@@ -135,14 +135,15 @@ the `spark` expansion is registered. It then reads:
 
 | Placeholder                  | Used for                                        |
 | ---------------------------- | ----------------------------------------------- |
-| `{spark.tps_5s}`           | 5-second TPS                                    |
-| `{spark.tickduration_10s}` | 10-second MSPT distribution; the median is used |
-| `{spark.cpu_process_10s}`  | 10-second Spark/BDS process CPU                 |
+| `{spark:tps_5s}`           | 5-second TPS                                    |
+| `{spark:tickduration_10s}` | 10-second MSPT distribution; the median is used |
+| `{spark:cpu_process_10s}`  | 10-second Spark/BDS process CPU                 |
 
 Minecraft color codes are stripped before numeric parsing.
 
-The plugin intentionally does **not** support the old underscore-separated token
-syntax such as `{spark_tps_5s}`.
+The plugin requires the colon-separated PAPI namespace syntax. Legacy dot- and
+underscore-separated tokens such as `{spark.tps_5s}` and `{spark_tps_5s}` are not
+supported.
 
 ## Configuration
 
