@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="zh-CN" data-theme="deepslate">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="color-scheme" content="dark light">
+  <meta name="theme-color" content="#17202a">
+  <title>Bedrock Server Status</title>
+  <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/assets/app.css">
+  <script src="/assets/app.js" defer></script>
+</head>
+<body>
+  <div class="sky-noise" aria-hidden="true"></div>
+  <main class="shell">
+    <header class="masthead pixel-panel">
+      <div class="server-mark" aria-hidden="true"><span></span></div>
+      <div class="masthead-copy">
+        <p class="eyebrow" data-i18n="publicStatus">公开服务器状态</p>
+        <h1 id="serverName">Bedrock Server</h1>
+        <div class="server-meta">
+          <span id="onlineBadge" class="status-badge status-loading"><i></i><span data-i18n="connecting">正在连接</span></span>
+          <button id="addressButton" class="address-button" type="button" hidden>
+            <span id="serverAddress"></span><span class="copy-glyph" aria-hidden="true">▣</span>
+          </button>
+        </div>
+      </div>
+      <div class="header-actions">
+        <button id="themeButton" class="pixel-button" type="button" aria-label="切换主题">☾</button>
+        <button id="languageButton" class="pixel-button text-button" type="button">EN</button>
+      </div>
+    </header>
+
+    <section id="connectionBanner" class="connection-banner pixel-panel" hidden role="status">
+      <strong data-i18n="connectionLost">状态连接中断</strong>
+      <span data-i18n="retrying">页面会自动重试，游戏服务器不一定已离线。</span>
+    </section>
+
+    <section class="metric-grid" aria-label="核心状态">
+      <article class="metric-card pixel-panel" data-metric="tps">
+        <div class="metric-icon grass-block" aria-hidden="true"></div>
+        <div class="metric-heading"><span>TPS</span><small id="tpsHint">--</small></div>
+        <strong id="tpsValue">--</strong>
+        <div class="pixel-meter"><span id="tpsMeter"></span></div>
+      </article>
+      <article class="metric-card pixel-panel" data-metric="mspt">
+        <div class="metric-icon redstone-block" aria-hidden="true"></div>
+        <div class="metric-heading"><span>MSPT</span><small id="msptHint">--</small></div>
+        <strong id="msptValue">--</strong>
+        <div class="pixel-meter"><span id="msptMeter"></span></div>
+      </article>
+      <article class="metric-card pixel-panel" data-metric="players">
+        <div class="metric-icon player-head" aria-hidden="true"></div>
+        <div class="metric-heading"><span data-i18n="players">玩家</span><small data-i18n="onlineNow">当前在线</small></div>
+        <strong id="playersValue">--</strong>
+        <div class="pixel-meter"><span id="playersMeter"></span></div>
+      </article>
+      <article class="metric-card pixel-panel" data-metric="health">
+        <div class="metric-icon heart-icon" aria-hidden="true">♥</div>
+        <div class="metric-heading"><span data-i18n="serverState">服务器状态</span><small id="healthHint">--</small></div>
+        <strong id="healthValue">--</strong>
+        <div class="pixel-meter"><span id="healthMeter"></span></div>
+      </article>
+    </section>
+
+    <section class="chart-grid">
+      <article class="pixel-panel chart-panel">
+        <div class="section-title">
+          <div><p class="eyebrow" data-i18n="lastFiveMinutes">最近五分钟</p><h2 data-i18n="tickPerformance">Tick 性能</h2></div>
+          <div class="legend"><span class="legend-tps">TPS</span><span class="legend-mspt">MSPT</span></div>
+        </div>
+        <div class="chart-wrap"><canvas id="tickChart" aria-label="TPS 和 MSPT 历史曲线"></canvas></div>
+      </article>
+      <article class="pixel-panel chart-panel">
+        <div class="section-title">
+          <div><p class="eyebrow" data-i18n="hostAndProcess">主机与进程</p><h2 data-i18n="resourceUsage">资源占用</h2></div>
+          <div class="legend"><span class="legend-cpu">CPU</span><span class="legend-memory" data-i18n="memory">内存</span></div>
+        </div>
+        <div class="chart-wrap"><canvas id="resourceChart" aria-label="CPU 和内存历史曲线"></canvas></div>
+      </article>
+    </section>
+
+    <section class="system-grid">
+      <article class="pixel-panel system-card"><span data-i18n="bdsCpu">BDS CPU</span><strong id="processCpu">--</strong><small data-i18n="multiCoreNote">100% 约等于一个核心</small></article>
+      <article class="pixel-panel system-card"><span data-i18n="bdsMemory">BDS 内存</span><strong id="processMemory">--</strong><small>RSS</small></article>
+      <article class="pixel-panel system-card"><span data-i18n="hostMemory">主机内存</span><strong id="hostMemory">--</strong><small id="hostMemoryDetail">--</small></article>
+      <article class="pixel-panel system-card"><span data-i18n="network">主机网络</span><strong id="networkRate">--</strong><small id="networkDetail">--</small></article>
+      <article class="pixel-panel system-card"><span data-i18n="disk">磁盘</span><strong id="diskUsage">--</strong><small id="diskDetail">--</small></article>
+      <article class="pixel-panel system-card"><span data-i18n="uptime">运行时长</span><strong id="uptime">--</strong><small data-i18n="bdsProcess">BDS 进程</small></article>
+    </section>
+
+    <section class="community-grid">
+      <article class="pixel-panel list-panel">
+        <div class="section-title compact"><div><p class="eyebrow" data-i18n="adventurers">冒险者</p><h2 data-i18n="onlinePlayers">在线玩家</h2></div><span id="playerCountChip" class="count-chip">0</span></div>
+        <div id="playerList" class="player-list"><p class="empty-state" data-i18n="loadingPlayers">正在读取玩家列表…</p></div>
+      </article>
+      <article class="pixel-panel list-panel">
+        <div class="section-title compact"><div><p class="eyebrow" data-i18n="serverChat">服务器聊天</p><h2 data-i18n="recentMessages">最近消息</h2></div><span class="chat-icon" aria-hidden="true">▰</span></div>
+        <div id="chatList" class="chat-list"><p class="empty-state" data-i18n="loadingChat">正在读取聊天…</p></div>
+      </article>
+    </section>
+
+    <footer class="pixel-panel footer-panel">
+      <div><span data-i18n="lastUpdated">最后更新</span><strong id="lastUpdated">--</strong></div>
+      <div><span data-i18n="minecraftVersion">Minecraft</span><strong id="minecraftVersion">--</strong></div>
+      <div><span>Endstone</span><strong id="endstoneVersion">--</strong></div>
+      <div><span data-i18n="webProtection">网页防护</span><strong id="webProtection">--</strong></div>
+    </footer>
+  </main>
+  <div id="toast" class="toast pixel-panel" hidden role="status"></div>
+</body>
+</html>
