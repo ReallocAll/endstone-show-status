@@ -26,10 +26,16 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
-      - name: Install build frontend and project
+      - name: Install test dependencies and project
         run: |
-          python -m pip install --upgrade pip build
-          python -m pip install .
+          python -m pip install --upgrade pip build psutil
+          python -m pip install --no-deps .
+
+      - name: Provide Endstone API test stub
+        env:
+          STUB_PATH: ${{ runner.temp }}/endstone-test-stub
+        run: |
+          python -c "import os; from pathlib import Path; root=Path(os.environ['STUB_PATH'])/'endstone'; root.mkdir(parents=True, exist_ok=True); (root/'__init__.py').write_text('', encoding='utf-8'); (root/'event.py').write_text('class PlayerChatEvent: pass\n\ndef event_handler(function): return function\n', encoding='utf-8'); (root/'plugin.py').write_text('class Plugin: pass\n', encoding='utf-8'); Path(os.environ['GITHUB_ENV']).open('a', encoding='utf-8').write('PYTHONPATH=' + str(root.parent) + os.pathsep + os.environ.get('PYTHONPATH', '') + '\n')"
 
       - name: Run unit tests
         run: python -m unittest discover -s tests -v

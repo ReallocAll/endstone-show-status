@@ -34,6 +34,11 @@ state snapshots are created on the Endstone server thread.
 - Endstone `>=0.12,<0.13`
 - `psutil>=5`
 
+Endstone 0.12 is required at runtime but is not currently published on the
+public PyPI index used by this project, which currently lists releases only up
+to 0.11.10. Obtain the compatible Endstone 0.12 runtime package from the
+Endstone/BDS distribution used for deployment before installing the plugin.
+
 For optional Spark metrics, install compatible builds of:
 
 - Endstone PlaceholderAPI (`papi`)
@@ -117,6 +122,12 @@ Install the project in editable mode:
 ```bash
 python -m pip install -e .
 ```
+
+The Endstone 0.12 runtime package must be available from your deployment
+environment before installing the project. The CI unit-test job installs this
+project with `--no-deps` and supplies a minimal local Endstone API stub so the
+import-level tests do not download an unavailable Endstone release. These tests
+do not validate plugin behavior inside BDS.
 
 Run the unit tests:
 

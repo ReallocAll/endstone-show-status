@@ -29,6 +29,10 @@
 - Endstone `>=0.12,<0.13`
 - `psutil>=5`
 
+运行插件时必须使用 Endstone 0.12，但该版本目前尚未发布到本项目使用的公开
+PyPI 索引；该索引当前只列出到 0.11.10。安装插件前，请从部署所使用的
+Endstone/BDS 分发渠道获取兼容的 Endstone 0.12 运行时包。
+
 如需 Spark 指标，请安装兼容版本的以下插件：
 
 - Endstone PlaceholderAPI（`papi`）
@@ -107,6 +111,10 @@ python -m pip wheel . --no-deps --no-build-isolation -w dist
 ```bash
 python -m pip install -e .
 ```
+
+安装项目之前，部署环境必须已经提供 Endstone 0.12 运行时包。CI 单元测试任务会
+使用 `--no-deps` 安装本项目，并提供仅用于导入的最小本地 Endstone API stub，因而
+不会尝试下载尚未公开发布的 Endstone 版本。这些测试不代表插件已在 BDS 中完成运行验证。
 
 运行单元测试：
 
