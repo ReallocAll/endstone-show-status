@@ -1,5 +1,9 @@
 # Endstone Show Status
 
+[![CI](https://github.com/ReallocAll/endstone-show-status/actions/workflows/build.yml/badge.svg)](https://github.com/ReallocAll/endstone-show-status/actions/workflows/build.yml)
+[![License](https://img.shields.io/badge/license-GPL--3.0-blue.svg)](LICENSE)
+[English](README.md) | [简体中文](README_ZH.md)
+
 A lightweight, read-only public status page for an
 [Endstone](https://github.com/EndstoneMC/endstone) Minecraft Bedrock Dedicated
 Server.
@@ -21,15 +25,14 @@ state snapshots are created on the Endstone server thread.
 - Optional HTTP Basic Authentication.
 - Security headers and restrictive Content Security Policy.
 - Optional Spark + PlaceholderAPI integration for Spark's rolling TPS/MSPT/process
-  CPU metrics.
+  and system CPU metrics.
 - No hard dependency on PlaceholderAPI or Spark.
 
 ## Requirements
 
-- Python 3.10+
-- Endstone `>=0.11,<0.12`
+- Python 3.11+
+- Endstone `>=0.12,<0.13`
 - `psutil>=5`
-- Python 3.10 additionally uses `tomli>=2` for TOML parsing.
 
 For optional Spark metrics, install compatible builds of:
 
@@ -42,6 +45,7 @@ The integration uses PAPI's colon-separated namespace syntax:
 {spark:tps_5s}
 {spark:tickduration_10s}
 {spark:cpu_process_10s}
+{spark:cpu_system_1m}
 ```
 
 If PAPI is absent, inactive, or the `spark` expansion is not registered, the
@@ -138,6 +142,7 @@ the `spark` expansion is registered. It then reads:
 | `{spark:tps_5s}`           | 5-second TPS                                    |
 | `{spark:tickduration_10s}` | 10-second MSPT distribution; the median is used |
 | `{spark:cpu_process_10s}`  | 10-second Spark/BDS process CPU                 |
+| `{spark:cpu_system_1m}`    | 1-minute Spark/system CPU                       |
 
 Minecraft color codes are stripped before numeric parsing.
 
@@ -259,3 +264,7 @@ port to the Internet.
 The built-in request guard limits global and per-IP concurrency and applies a
 token-bucket rate limit. It is still reasonable to place the service behind a
 reverse proxy when exposing it publicly.
+
+## License
+
+This project is licensed under the [GNU GPL-3.0](LICENSE).

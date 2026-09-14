@@ -24,7 +24,7 @@ from .web import (
 
 
 class ShowStatus(Plugin):
-    api_version = "0.5"
+    api_version = "0.12"
     soft_depend: ClassVar[list[str]] = ["papi"]
 
     def on_load(self) -> None:
@@ -252,6 +252,8 @@ class ShowStatus(Plugin):
                 players.sort(key=lambda row: str(row["name"]).casefold())
 
             system_snapshot = self.metrics_collector.get_snapshot().to_dict()
+            if spark_metrics.system_cpu_1m_percent is not None:
+                system_snapshot["cpu_average_percent"] = spark_metrics.system_cpu_1m_percent
             now_ms = int(time.time() * 1000)
             uptime_seconds = max(0, int(time.time() - self._process_started_at))
             max_players = self._get_max_players()
@@ -435,6 +437,7 @@ class ShowStatus(Plugin):
                 "tps_5s": None,
                 "mspt_10s_median": None,
                 "process_cpu_10s_percent": None,
+                "system_cpu_1m_percent": None,
             },
             "players": [],
             "chat": [],

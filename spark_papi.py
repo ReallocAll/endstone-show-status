@@ -14,6 +14,7 @@ class SparkPapiMetrics:
     tps_5s: float | None = None
     mspt_10s_median: float | None = None
     process_cpu_10s_percent: float | None = None
+    system_cpu_1m_percent: float | None = None
 
     def to_dict(self) -> dict[str, bool | float | None]:
         return asdict(self)
@@ -76,11 +77,13 @@ class SparkPapiClient:
             tps = service.set_placeholders(None, "{spark:tps_5s}")
             mspt = service.set_placeholders(None, "{spark:tickduration_10s}")
             process_cpu = service.set_placeholders(None, "{spark:cpu_process_10s}")
+            system_cpu = service.set_placeholders(None, "{spark:cpu_system_1m}")
             return SparkPapiMetrics(
                 available=True,
                 tps_5s=_parse_tps(tps),
                 mspt_10s_median=_parse_mspt_median(mspt),
                 process_cpu_10s_percent=_parse_percent(process_cpu),
+                system_cpu_1m_percent=_parse_percent(system_cpu),
             )
         except (AttributeError, RuntimeError, TypeError, ValueError):
             self._service = None
