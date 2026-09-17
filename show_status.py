@@ -24,7 +24,7 @@ from .web import (
 
 
 class ShowStatus(Plugin):
-    api_version = "0.12"
+    api_version = "0.11"
     soft_depend: ClassVar[list[str]] = ["papi"]
 
     def on_load(self) -> None:

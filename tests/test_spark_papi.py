@@ -169,7 +169,7 @@ class SparkPapiClientTest(unittest.TestCase):
         plugin.is_running = True
         plugin._test_server = server
         plugin._spark_papi = SparkPapiClient()
-        plugin._endstone_version = "0.12-test"
+        plugin._endstone_version = "0.11-test"
         plugin._plugin_version = "test"
         plugin._last_snapshot_error_at = 0.0
         plugin._last_snapshot_error_text = ""

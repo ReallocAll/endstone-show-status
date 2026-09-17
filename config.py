@@ -1,10 +1,14 @@
 from __future__ import annotations
 
 import os
-import tomllib
 from dataclasses import dataclass, fields
 from pathlib import Path
 from typing import Any, TypeVar
+
+try:
+    import tomllib
+except ModuleNotFoundError:  # Python 3.10
+    import tomli as tomllib  # type: ignore[no-redef]
 
 
 @dataclass(slots=True)
