@@ -123,6 +123,10 @@ python -m build --wheel
 python -m unittest discover -s tests -v
 ```
 
+Release 工作流支持手动运行时设置 `dry_run=true` 进行验证：它会检出指定提交，
+检查标签与项目版本，构建 wheel 并上传为 artifact，但不会创建 GitHub Release。
+正常手动发布时保持 `dry_run=false`；推送 `v*` 标签时仍保持原有发布行为。
+
 ## PlaceholderAPI / Spark 集成
 
 `SparkPapiClient` 首先加载原生 `PlaceholderAPI` 服务，并检查 `spark` expansion 是否已注册，然后读取以下值：

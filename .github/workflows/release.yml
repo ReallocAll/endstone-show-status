@@ -15,6 +15,11 @@ on:
         required: false
         default: false
         type: boolean
+      dry_run:
+        description: "Build and upload a validation wheel without creating a release"
+        required: false
+        default: false
+        type: boolean
 
 concurrency:
   group: release-${{ github.event.inputs.tag || github.ref_name }}
@@ -27,7 +32,14 @@ jobs:
   release:
     runs-on: ubuntu-latest
     steps:
-      - name: Check out code
+      - name: Check out dry-run candidate
+        if: github.event_name == 'workflow_dispatch' && inputs.dry_run == true
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ github.sha }}
+
+      - name: Check out release ref
+        if: github.event_name != 'workflow_dispatch' || inputs.dry_run != true
         uses: actions/checkout@v7
         with:
           ref: ${{ github.event.inputs.tag || github.ref }}
@@ -61,7 +73,15 @@ jobs:
       - name: Build wheel
         run: python -m build --wheel
 
+      - name: Upload dry-run wheel
+        if: github.event_name == 'workflow_dispatch' && inputs.dry_run == true
+        uses: actions/upload-artifact@v7
+        with:
+          name: endstone-show-status-dry-run-${{ github.run_id }}
+          path: dist/*.whl
+
       - name: Create GitHub Release
+        if: github.event_name != 'workflow_dispatch' || inputs.dry_run != true
         uses: softprops/action-gh-release@v3.0.1
         with:
           tag_name: ${{ github.event.inputs.tag || github.ref_name }}

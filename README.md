@@ -133,6 +133,12 @@ python -m build --wheel
 python -m unittest discover -s tests -v
 ```
 
+The Release workflow accepts `dry_run=true` for a manual validation run. It
+checks out the selected commit, validates the tag and project version, builds a
+wheel, and uploads it as an artifact without creating a GitHub Release. Leave
+`dry_run=false` for the normal manual release flow; pushing a `v*` tag keeps its
+existing release behavior.
+
 ## PlaceholderAPI / Spark integration
 
 `SparkPapiClient` first loads the native `PlaceholderAPI` service and checks that
