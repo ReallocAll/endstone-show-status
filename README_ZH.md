@@ -69,7 +69,7 @@ python -m build --wheel
 wheel 会写入：
 
 ```text
-dist/endstone_show_status-0.2.0-py3-none-any.whl
+dist/endstone_show_status-0.2.1-py3-none-any.whl
 ```
 
 同时构建 wheel 和源码分发包：

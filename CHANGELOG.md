@@ -4,6 +4,8 @@ All notable changes to this project are documented here.
 
 ## [Unreleased]
 
+## [0.2.1] - 2026-09-17
+
 ### Added
 
 - Include Spark's rolling system CPU metric in status snapshots when available.
