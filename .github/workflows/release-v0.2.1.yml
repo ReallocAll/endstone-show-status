@@ -1,10 +1,9 @@
-name: Publish v0.2.1
+name: Finalize v0.2.1
 
 on:
   push:
     branches: [main]
     paths: [.github/workflows/release-v0.2.1.yml]
-  workflow_dispatch:
 
 permissions:
   contents: read
@@ -14,15 +13,13 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  prepare:
+  finalize:
     if: github.repository == 'ReallocAll/endstone-show-status' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 5
     permissions:
       contents: write
-    outputs:
-      sha: ${{ steps.candidate.outputs.sha }}
-      base: ${{ steps.candidate.outputs.base }}
+      actions: write
     steps:
       - uses: actions/checkout@v7
         with:
@@ -30,136 +27,94 @@ jobs:
       - uses: actions/setup-python@v6
         with:
           python-version: '3.11'
-      - name: Prepare versioned candidate without changing main
-        id: candidate
+      - name: Verify the published tag and wheel
         env:
           GH_TOKEN: ${{ github.token }}
         shell: bash
         run: |
           set -euo pipefail
-          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
           test "$(git ls-remote origin refs/heads/main | cut -f1)" = "$GITHUB_SHA"
-          test -z "$(git ls-remote origin refs/tags/v0.2.1)"
-          if gh release view v0.2.1 --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
-            echo 'v0.2.1 already exists; refusing to overwrite it' >&2
-            exit 1
-          fi
+          test "$(git rev-parse 'refs/tags/v0.2.1^{commit}')" = 'e8aa9d25077b007f25cce14a749ee499fc9677b8'
+          gh api "repos/$GITHUB_REPOSITORY/releases/tags/v0.2.1" > "$RUNNER_TEMP/release.json"
+          gh release download v0.2.1 --repo "$GITHUB_REPOSITORY" --pattern 'endstone_show_status-0.2.1-py3-none-any.whl' --dir "$RUNNER_TEMP/release-assets"
           python - <<'PY'
+          import hashlib
+          import json
+          import os
           from pathlib import Path
-          import tomllib
-          project_path = Path('pyproject.toml')
-          text = project_path.read_text(encoding='utf-8')
-          project = tomllib.loads(text)['project']
-          assert project['version'] == '0.2.0', project['version']
-          assert 'endstone==0.11.11' in project['dependencies']
-          assert text.count('version = "0.2.0"') == 1
-          project_path.write_text(text.replace('version = "0.2.0"', 'version = "0.2.1"'), encoding='utf-8')
-          for filename in ('README.md', 'README_ZH.md'):
-              path = Path(filename)
-              text = path.read_text(encoding='utf-8')
-              old = 'endstone_show_status-0.2.0-py3-none-any.whl'
-              assert text.count(old) == 1, filename
-              path.write_text(text.replace(old, 'endstone_show_status-0.2.1-py3-none-any.whl'), encoding='utf-8')
-          path = Path('CHANGELOG.md')
-          text = path.read_text(encoding='utf-8')
-          assert text.count('## [Unreleased]') == 1
-          assert '## [0.2.1]' not in text
-          text = text.replace('## [Unreleased]', '## [Unreleased]\n\n## [0.2.1] - 2026-09-17', 1)
-          path.write_text(text, encoding='utf-8')
-          PY
-          git diff --check
-          git diff --stat
-          git config user.name 'github-actions[bot]'
-          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add pyproject.toml CHANGELOG.md README.md README_ZH.md
-          git commit -m 'chore: release show-status v0.2.1'
-          candidate=$(git rev-parse HEAD)
-          ref="refs/heads/release-candidates/show-status-v0.2.1-$GITHUB_RUN_ID"
-          git push origin "$candidate:$ref"
-          echo "sha=$candidate" >> "$GITHUB_OUTPUT"
-          echo "base=$GITHUB_SHA" >> "$GITHUB_OUTPUT"
-
-  validate:
-    needs: prepare
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [ubuntu-latest, windows-latest]
-        python-version: ['3.10', '3.11']
-    runs-on: ${{ matrix.os }}
-    timeout-minutes: 15
-    steps:
-      - uses: actions/checkout@v7
-        with:
-          ref: ${{ needs.prepare.outputs.sha }}
-          persist-credentials: false
-      - uses: actions/setup-python@v6
-        with:
-          python-version: ${{ matrix.python-version }}
-      - name: Install project and build frontend
-        run: |
-          python -m pip install --upgrade pip build psutil
-          python -m pip install .
-      - name: Run unit tests
-        run: python -m unittest discover -s tests -v
-      - name: Build release wheel
-        run: python -m build --wheel
-      - name: Verify release metadata and bundled web assets
-        shell: python
-        run: |
           from email.parser import BytesParser
-          from pathlib import Path
           import zipfile
-          wheels = list(Path('dist').glob('*.whl'))
-          assert len(wheels) == 1, wheels
-          assert wheels[0].name == 'endstone_show_status-0.2.1-py3-none-any.whl'
-          with zipfile.ZipFile(wheels[0]) as archive:
+          root = Path(os.environ['RUNNER_TEMP'])
+          release = json.loads((root / 'release.json').read_text())
+          assert release['tag_name'] == 'v0.2.1'
+          assert not release['draft'] and not release['prerelease']
+          assert len(release['assets']) == 1
+          asset = release['assets'][0]
+          assert asset['name'] == 'endstone_show_status-0.2.1-py3-none-any.whl'
+          assert asset['state'] == 'uploaded'
+          wheel = root / 'release-assets' / asset['name']
+          digest = hashlib.sha256(wheel.read_bytes()).hexdigest()
+          assert 'sha256:' + digest == asset['digest']
+          assert digest == 'd2b3d3477d6d8e477ee76fcdec9cdb5633b3130dd8b3926bdab7f2feb48343ca'
+          with zipfile.ZipFile(wheel) as archive:
               names = archive.namelist()
-              metadata_names = [name for name in names if name.endswith('.dist-info/METADATA')]
-              assert len(metadata_names) == 1
-              metadata = BytesParser().parsebytes(archive.read(metadata_names[0]))
+              metadata = BytesParser().parsebytes(archive.read('endstone_show_status-0.2.1.dist-info/METADATA'))
               assert metadata['Version'] == '0.2.1'
               assert metadata['Requires-Python'] == '>=3.10'
               assert 'endstone==0.11.11' in metadata.get_all('Requires-Dist', [])
               for suffix in ('.html', '.css', '.js', '.svg'):
-                  assert any('/webui/' in name and name.endswith(suffix) for name in names), suffix
-          print('Verified v0.2.1 wheel, exact Endstone dependency, Python baseline, and web assets')
-      - uses: actions/upload-artifact@v7
-        with:
-          name: show-status-v0.2.1-${{ matrix.os }}-py${{ matrix.python-version }}
-          path: dist/*.whl
-          if-no-files-found: error
-
-  finalize:
-    needs: [prepare, validate]
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    permissions:
-      contents: write
-      actions: write
-    steps:
-      - uses: actions/checkout@v7
-        with:
-          ref: ${{ needs.prepare.outputs.sha }}
-          fetch-depth: 0
-      - name: Atomically publish the validated main and tag
-        env:
-          BASE_SHA: ${{ needs.prepare.outputs.base }}
-          CANDIDATE_SHA: ${{ needs.prepare.outputs.sha }}
-        shell: bash
-        run: |
-          set -euo pipefail
-          test "$(git rev-parse HEAD)" = "$CANDIDATE_SHA"
-          test "$(git rev-parse HEAD^)" = "$BASE_SHA"
-          test "$(git ls-remote origin refs/heads/main | cut -f1)" = "$BASE_SHA"
-          test -z "$(git ls-remote origin refs/tags/v0.2.1)"
-          git push --atomic origin "$CANDIDATE_SHA:refs/heads/main" "$CANDIDATE_SHA:refs/tags/v0.2.1"
-      - name: Run the existing CI and official Release workflows
+                  assert any('/webui/' in name and name.endswith(suffix) for name in names)
+          print('Published wheel SHA256:', digest)
+          print('Published wheel metadata and bundled assets verified')
+          PY
+      - name: Publish release notes
         env:
           GH_TOKEN: ${{ github.token }}
         shell: bash
         run: |
           set -euo pipefail
+          cat > "$RUNNER_TEMP/release-notes.md" <<'EOF'
+          ## Endstone Show Status 0.2.1
+
+          ### Changes
+          - Pin the runtime dependency to **Endstone 0.11.11** and use Endstone API 0.11.
+          - Retain **Python 3.10+** support, including the `tomli` fallback on Python 3.10.
+          - Include Spark's rolling system CPU metric in status snapshots when available.
+          - Synchronize the package version, changelog, and English/Chinese build instructions.
+
+          ### Installation
+          Stop Endstone, replace the old show-status wheel in `plugins/` with
+          `endstone_show_status-0.2.1-py3-none-any.whl`, and restart the server.
+          Keep the existing plugin configuration and data directory.
+
+          Requires `endstone==0.11.11`, Python 3.10+, and `psutil>=5`.
+          Python 3.10 additionally requires `tomli>=2`. Spark and PAPI remain optional.
+          This release targets Endstone 0.11.11, not Endstone 0.12.
+
+          ### Validation
+          Windows and Linux installation, unit tests, isolated wheel builds, metadata
+          checks, and bundled web-asset checks passed on Python 3.10 and 3.11.
+          The existing Release workflow built and published this wheel from tag `v0.2.1`.
+
+          ### 中文
+          本版本将 Endstone 依赖固定为 **0.11.11**，使用 API 0.11，保留 Python 3.10+ 支持及可选的 Spark/PAPI 指标集成。
+          停服后用新 wheel 替换 `plugins/` 中的旧 show-status wheel，保留原配置和数据目录，再启动服务器。
+          Windows/Linux 下的 Python 3.10、3.11 安装、单元测试、构建和打包校验均已通过。
+
+          **Full Changelog**: https://github.com/ReallocAll/endstone-show-status/compare/v0.2.0...v0.2.1
+          EOF
+          gh release edit v0.2.1 --repo "$GITHUB_REPOSITORY" --notes-file "$RUNNER_TEMP/release-notes.md"
+      - name: Remove this one-time workflow and recheck main
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git ls-remote origin refs/heads/main | cut -f1)" = "$GITHUB_SHA"
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git rm .github/workflows/release-v0.2.1.yml
+          git commit -m 'ci: remove completed v0.2.1 release orchestration'
+          git push origin HEAD:main
           gh workflow run build.yml --repo "$GITHUB_REPOSITORY" --ref main
-          gh workflow run release.yml --repo "$GITHUB_REPOSITORY" --ref main -f tag=v0.2.1 -f prerelease=false -f dry_run=false
-          echo 'Dispatched CI and the existing Release workflow for validated v0.2.1' >> "$GITHUB_STEP_SUMMARY"
+          echo 'Release v0.2.1 verified; one-time orchestration removed; main CI dispatched.' >> "$GITHUB_STEP_SUMMARY"
