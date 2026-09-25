@@ -31,7 +31,7 @@ state snapshots are created on the Endstone server thread.
 ## Requirements
 
 - Python 3.10+
-- Endstone `==0.11.11`
+- Endstone `>=0.11`
 - `psutil>=5`
 - Python 3.10 additionally uses `tomli>=2` for TOML parsing.
 

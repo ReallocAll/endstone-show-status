@@ -26,7 +26,7 @@
 ## 环境要求
 
 - Python 3.10+
-- Endstone `==0.11.11`
+- Endstone `>=0.11`
 - `psutil>=5`
 - Python 3.10 使用 `tomli>=2` 解析 TOML。
 
@@ -131,12 +131,12 @@ Release 工作流支持手动运行时设置 `dry_run=true` 进行验证：它�
 
 `SparkPapiClient` 首先加载原生 `PlaceholderAPI` 服务，并检查 `spark` expansion 是否已注册，然后读取以下值：
 
-| 占位符 | 用途 |
-| --- | --- |
-| `{spark:tps_5s}` | 5 秒 TPS |
+| 占位符                       | 用途                        |
+| ---------------------------- | --------------------------- |
+| `{spark:tps_5s}`           | 5 秒 TPS                    |
 | `{spark:tickduration_10s}` | 10 秒 MSPT 分布，使用中位数 |
-| `{spark:cpu_process_10s}` | 10 秒 Spark/BDS 进程 CPU |
-| `{spark:cpu_system_1m}` | 1 分钟 Spark/系统 CPU |
+| `{spark:cpu_process_10s}`  | 10 秒 Spark/BDS 进程 CPU    |
+| `{spark:cpu_system_1m}`    | 1 分钟 Spark/系统 CPU       |
 
 数值解析前会移除 Minecraft 颜色代码。
 
@@ -220,17 +220,17 @@ ENDSTONE_SHOW_STATUS_SERVER_ADDRESS
 
 只接受 `GET` 和 `HEAD` 请求。
 
-| 端点 | 说明 |
-| --- | --- |
-| `/` | 内置状态页面 |
-| `/api/v1/status` | 当前 JSON 快照 |
-| `/api/v1/history` | 滚动历史 JSON |
-| `/data` | 旧版状态数据 |
-| `/healthz` | 插件健康探针 |
-| `/robots.txt` | 搜索引擎策略 |
-| `/assets/app.css` | 内置样式表 |
-| `/assets/app.js` | 内置前端脚本 |
-| `/assets/favicon.svg` | 内置 favicon |
+| 端点                    | 说明           |
+| ----------------------- | -------------- |
+| `/`                   | 内置状态页面   |
+| `/api/v1/status`      | 当前 JSON 快照 |
+| `/api/v1/history`     | 滚动历史 JSON  |
+| `/data`               | 旧版状态数据   |
+| `/healthz`            | 插件健康探针   |
+| `/robots.txt`         | 搜索引擎策略   |
+| `/assets/app.css`     | 内置样式表     |
+| `/assets/app.js`      | 内置前端脚本   |
+| `/assets/favicon.svg` | 内置 favicon   |
 
 ## 打包布局
 

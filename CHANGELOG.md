@@ -4,6 +4,10 @@ All notable changes to this project are documented here.
 
 ## [Unreleased]
 
+### Fix
+
+- Support endstone 0.11
+
 ## [0.2.1] - 2026-09-17
 
 ### Added

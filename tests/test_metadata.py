@@ -16,7 +16,7 @@ class ProjectMetadataTest(unittest.TestCase):
             project = tomllib.load(stream)["project"]
 
         self.assertEqual(project["requires-python"], ">=3.10")
-        self.assertIn("endstone==0.11.11", project["dependencies"])
+        self.assertIn("endstone>=0.11", project["dependencies"])
         self.assertIn("tomli>=2; python_version < '3.11'", project["dependencies"])
 
     def test_plugin_uses_endstone_011_api(self) -> None:
