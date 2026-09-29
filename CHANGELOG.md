@@ -4,6 +4,15 @@ All notable changes to this project are documented here.
 
 ## [Unreleased]
 
+## [0.2.4] - 2026-09-30
+
+### Fixed
+
+- Refresh the continuous TPS/MSPT/PING tip every 5 ticks so the Bedrock client does not fade it out between updates.
+- Run the shared player-tip scheduler every 5 ticks while retaining per-player throttling for slower intervals.
+- Store player display intervals in ticks and migrate v0.2.3 `tip_interval_seconds` preferences automatically.
+- Add an explicit 1-second interval between continuous mode and the slower presets.
+
 ## [0.2.3] - 2026-09-30
 
 ### Added
