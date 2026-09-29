@@ -79,7 +79,7 @@ python -m build --wheel
 The wheel is written to:
 
 ```text
-dist/endstone_show_status-0.2.3-py3-none-any.whl
+dist/endstone_show_status-0.2.4-py3-none-any.whl
 ```
 
 To build both a wheel and source distribution:
@@ -213,9 +213,9 @@ Players can run:
 ```
 
 The command is available to all players by default and opens a native Endstone
-modal form. Its step slider runs from **continuous display** on the far left
-through 2, 3, 5, 10, 15, 30, and 60 second intervals to **disabled** on the far
-right.
+modal form. Its step slider runs from **continuous display** on the far left,
+which refreshes every 5 ticks (0.25 seconds), through 1, 2, 3, 5, 10, 15, 30,
+and 60 second intervals to **disabled** on the far right.
 
 Preferences are stored by player UUID in
 `plugins/show_status/player_settings.json` and take effect immediately. A

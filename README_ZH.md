@@ -70,7 +70,7 @@ python -m build --wheel
 wheel 会写入：
 
 ```text
-dist/endstone_show_status-0.2.3-py3-none-any.whl
+dist/endstone_show_status-0.2.4-py3-none-any.whl
 ```
 
 同时构建 wheel 和源码分发包：
@@ -194,7 +194,7 @@ expose_players = true
 ```
 
 该命令默认允许所有玩家使用，会打开 Endstone 原生 ModalForm。表单中的 StepSlider
-最左侧为“持续显示”，随后依次为 2、3、5、10、15、30、60 秒，最右侧为“不显示”。
+最左侧为“持续显示”，此模式每 5 tick（0.25 秒）刷新一次；随后依次为 1、2、3、5、10、15、30、60 秒，最右侧为“不显示”。
 
 玩家偏好按照 UUID 持久化到
 `plugins/show_status/player_settings.json`，保存后立即生效。ClockMenu

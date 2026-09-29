@@ -6,33 +6,49 @@ import threading
 from pathlib import Path
 from typing import Final
 
-DEFAULT_TIP_INTERVAL_SECONDS: Final[int] = 1
+CONTINUOUS_TIP_INTERVAL_TICKS: Final[int] = 5
+DEFAULT_TIP_INTERVAL_TICKS: Final[int] = 20
 TIP_INTERVAL_OPTIONS: Final[tuple[tuple[str, int | None], ...]] = (
-    ("持续显示", 1),
-    ("每 2 秒", 2),
-    ("每 3 秒", 3),
-    ("每 5 秒", 5),
-    ("每 10 秒", 10),
-    ("每 15 秒", 15),
-    ("每 30 秒", 30),
-    ("每 60 秒", 60),
+    ("持续显示", CONTINUOUS_TIP_INTERVAL_TICKS),
+    ("每 1 秒", 20),
+    ("每 2 秒", 40),
+    ("每 3 秒", 60),
+    ("每 5 秒", 100),
+    ("每 10 秒", 200),
+    ("每 15 秒", 300),
+    ("每 30 秒", 600),
+    ("每 60 秒", 1200),
     ("不显示", None),
 )
-_ALLOWED_INTERVALS: Final[frozenset[int | None]] = frozenset(value for _, value in TIP_INTERVAL_OPTIONS)
+_ALLOWED_INTERVAL_TICKS: Final[frozenset[int | None]] = frozenset(
+    value for _, value in TIP_INTERVAL_OPTIONS
+)
+_LEGACY_INTERVAL_SECONDS: Final[frozenset[int | None]] = frozenset(
+    {1, 2, 3, 5, 10, 15, 30, 60, None}
+)
 
 
-def tip_interval_option_index(interval: int | None) -> int:
+def tip_interval_option_index(interval_ticks: int | None) -> int:
     for index, (_, value) in enumerate(TIP_INTERVAL_OPTIONS):
-        if value == interval:
+        if value == interval_ticks:
             return index
-    if isinstance(interval, int) and not isinstance(interval, bool):
+    if isinstance(interval_ticks, int) and not isinstance(interval_ticks, bool):
         numeric = [
             (index, value)
             for index, (_, value) in enumerate(TIP_INTERVAL_OPTIONS)
             if value is not None
         ]
-        return min(numeric, key=lambda item: abs(item[1] - interval))[0]
+        return min(numeric, key=lambda item: abs(item[1] - interval_ticks))[0]
     return 0
+
+
+def _legacy_seconds_to_ticks(interval_seconds: int | None) -> int | None:
+    if interval_seconds is None:
+        return None
+    # v0.2.3 used 1 second as the value for the "continuous" option.
+    if interval_seconds == 1:
+        return CONTINUOUS_TIP_INTERVAL_TICKS
+    return interval_seconds * 20
 
 
 class PlayerSettingsStore:
@@ -63,38 +79,52 @@ class PlayerSettingsStore:
             for player_id, values in players.items():
                 if not isinstance(player_id, str) or not isinstance(values, dict):
                     continue
-                if "tip_interval_seconds" not in values:
+
+                if "tip_interval_ticks" in values:
+                    interval = values["tip_interval_ticks"]
+                    if interval is None or (
+                        isinstance(interval, int)
+                        and not isinstance(interval, bool)
+                        and interval in _ALLOWED_INTERVAL_TICKS
+                    ):
+                        self._tip_intervals[player_id] = interval
                     continue
-                interval = values["tip_interval_seconds"]
-                if interval is None or (
-                    isinstance(interval, int)
-                    and not isinstance(interval, bool)
-                    and interval in _ALLOWED_INTERVALS
-                ):
-                    self._tip_intervals[player_id] = interval
+
+                if "tip_interval_seconds" in values:
+                    legacy = values["tip_interval_seconds"]
+                    if legacy is None or (
+                        isinstance(legacy, int)
+                        and not isinstance(legacy, bool)
+                        and legacy in _LEGACY_INTERVAL_SECONDS
+                    ):
+                        self._tip_intervals[player_id] = _legacy_seconds_to_ticks(legacy)
             return None
 
-    def get_tip_interval(self, player_id: str, default: int = DEFAULT_TIP_INTERVAL_SECONDS) -> int | None:
+    def get_tip_interval_ticks(
+        self,
+        player_id: str,
+        default: int = DEFAULT_TIP_INTERVAL_TICKS,
+    ) -> int | None:
         with self._lock:
             return self._tip_intervals.get(player_id, default)
 
-    def set_tip_interval(self, player_id: str, interval: int | None) -> None:
-        if interval is not None and (
-            not isinstance(interval, int)
-            or isinstance(interval, bool)
-            or interval not in _ALLOWED_INTERVALS
+    def set_tip_interval_ticks(self, player_id: str, interval_ticks: int | None) -> None:
+        if interval_ticks is not None and (
+            not isinstance(interval_ticks, int)
+            or isinstance(interval_ticks, bool)
+            or interval_ticks not in _ALLOWED_INTERVAL_TICKS
         ):
-            raise ValueError(f"Unsupported tip interval: {interval!r}")
+            raise ValueError(f"Unsupported tip interval: {interval_ticks!r}")
         with self._lock:
-            self._tip_intervals[player_id] = interval
+            self._tip_intervals[player_id] = interval_ticks
             self._write_locked()
 
     def _write_locked(self) -> None:
         self.path.parent.mkdir(parents=True, exist_ok=True)
         payload = {
-            "schema_version": 1,
+            "schema_version": 2,
             "players": {
-                player_id: {"tip_interval_seconds": interval}
+                player_id: {"tip_interval_ticks": interval}
                 for player_id, interval in sorted(self._tip_intervals.items())
             },
         }
