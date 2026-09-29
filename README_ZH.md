@@ -16,6 +16,7 @@
 - 显示 TPS、MSPT、在线人数、运行时间、Minecraft/Endstone/插件版本。
 - 显示进程 CPU/RSS，以及主机 CPU、内存、磁盘和网络吞吐量。
 - 可选显示在线玩家列表和近期聊天。
+- 玩家可通过 `/showstatus` 表单独立调整 TPS/MSPT/PING HUD 的显示频率。
 - 提供用于图表的短期滚动历史数据。
 - 限流、每 IP 连接数限制、有上限的客户端跟踪和临时封禁。
 - 可选 HTTP Basic Authentication。
@@ -69,7 +70,7 @@ python -m build --wheel
 wheel 会写入：
 
 ```text
-dist/endstone_show_status-0.2.1-py3-none-any.whl
+dist/endstone_show_status-0.2.2-py3-none-any.whl
 ```
 
 同时构建 wheel 和源码分发包：
@@ -181,6 +182,23 @@ chat_entries = 100
 expose_chat = true
 expose_players = true
 ```
+
+`tip_enabled` 仍然是管理员全局总开关；`tip_interval_ticks` 则作为尚未保存个人偏好的玩家的默认显示间隔。
+
+### 玩家状态显示设置
+
+玩家可执行：
+
+```text
+/showstatus
+```
+
+该命令默认允许所有玩家使用，会打开 Endstone 原生 ModalForm。表单中的 StepSlider
+最左侧为“持续显示”，随后依次为 2、3、5、10、15、30、60 秒，最右侧为“不显示”。
+
+玩家偏好按照 UUID 持久化到
+`plugins/show_status/player_settings.json`，保存后立即生效。ClockMenu
+等菜单插件只需要执行 `showstatus` 命令即可，表单逻辑与持久化仍由本插件负责。
 
 ### 用户界面
 
