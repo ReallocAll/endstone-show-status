@@ -1,3 +1,4 @@
+import json
 import math
 import os
 import threading
@@ -9,11 +10,19 @@ from pathlib import Path
 from typing import Any, ClassVar
 
 import psutil
+from endstone import Player
+from endstone.command import Command, CommandSender
 from endstone.event import PlayerChatEvent, event_handler
+from endstone.form import ModalForm, StepSlider
 from endstone.plugin import Plugin
 
 from .config import load_config
 from .metrics import SystemMetricsCollector
+from .player_settings import (
+    PlayerSettingsStore,
+    TIP_INTERVAL_OPTIONS,
+    tip_interval_option_index,
+)
 from .spark_papi import SparkPapiClient
 from .web import (
     CachedResponse,
@@ -26,6 +35,20 @@ from .web import (
 class ShowStatus(Plugin):
     api_version = "0.11"
     soft_depend: ClassVar[list[str]] = ["papi"]
+
+    commands: ClassVar[dict[str, dict[str, Any]]] = {
+        "showstatus": {
+            "description": "Configure the in-game TPS/MSPT/PING status display.",
+            "usages": ["/showstatus"],
+            "permissions": ["show_status.command.settings"],
+        }
+    }
+    permissions: ClassVar[dict[str, dict[str, Any]]] = {
+        "show_status.command.settings": {
+            "description": "Allow players to configure their status display.",
+            "default": True,
+        }
+    }
 
     def on_load(self) -> None:
         self.is_running = False
@@ -40,6 +63,12 @@ class ShowStatus(Plugin):
         self._plugin_config, self._config_path, config_error = load_config(self._data_folder_path)
         if config_error:
             self.log_warning(config_error)
+
+        self._player_settings = PlayerSettingsStore(self._data_folder_path / "player_settings.json")
+        settings_error = self._player_settings.load()
+        if settings_error:
+            self.log_warning(settings_error)
+        self._next_tip_send: dict[str, float] = {}
 
         self.chat_lock = threading.Lock()
         self.chat_log: deque[dict[str, Any]] = deque(maxlen=self._plugin_config.status.chat_entries)
@@ -118,7 +147,7 @@ class ShowStatus(Plugin):
                 self,
                 self.send_player_tips,
                 delay=self._plugin_config.status.snapshot_interval_ticks,
-                period=self._plugin_config.status.tip_interval_ticks,
+                period=20,
             )
 
         http = self._plugin_config.http
@@ -223,6 +252,91 @@ class ShowStatus(Plugin):
         if tps >= 18.0 and mspt <= 50.0:
             return "busy"
         return "lagging"
+
+    def on_command(self, sender: CommandSender, command: Command, args: list[str]) -> bool:
+        if command.name != "showstatus":
+            return False
+        if not isinstance(sender, Player):
+            sender.send_message("This command can only be used by a player.")
+            return True
+        self.open_tip_settings(sender)
+        return True
+
+    def open_tip_settings(self, player: Player) -> None:
+        player_id = str(player.unique_id)
+        current = self._player_settings.get_tip_interval(
+            player_id,
+            default=self._default_tip_interval_seconds(),
+        )
+        form = ModalForm(
+            title="状态显示设置",
+            controls=[
+                StepSlider(
+                    label="TPS / MSPT / PING 显示频率",
+                    options=[label for label, _ in TIP_INTERVAL_OPTIONS],
+                    default_index=tip_interval_option_index(current),
+                )
+            ],
+            submit_button="保存",
+            on_submit=self._handle_tip_settings_submit,
+        )
+        player.send_form(form)
+
+    @staticmethod
+    def _decode_form_values(data: Any) -> list[Any]:
+        parsed = json.loads(data) if isinstance(data, str) else data
+        if isinstance(parsed, list):
+            return parsed
+        if isinstance(parsed, tuple):
+            return list(parsed)
+        raise ValueError("Unexpected modal form response")
+
+    def _handle_tip_settings_submit(self, player: Player, data: Any) -> None:
+        try:
+            values = self._decode_form_values(data)
+            index = int(values[0])
+            label, interval = TIP_INTERVAL_OPTIONS[index]
+        except (IndexError, TypeError, ValueError, json.JSONDecodeError):
+            player.send_error_message("无法读取状态显示设置，请重试。")
+            return
+
+        player_id = str(player.unique_id)
+        try:
+            self._player_settings.set_tip_interval(player_id, interval)
+        except (OSError, ValueError) as exc:
+            self.log_error(f"Unable to save player status preference for {player_id}: {exc}")
+            player.send_error_message("状态显示设置保存失败，请联系管理员。")
+            return
+
+        self._next_tip_send.pop(player_id, None)
+        if interval is None:
+            with suppress(Exception):
+                player.send_tip("")
+            player.send_message("§a状态显示已关闭。")
+            return
+
+        player.send_message(f"§a状态显示频率已设置为：§f{label}")
+        if self._plugin_config.status.tip_enabled:
+            with suppress(Exception):
+                self._send_player_tip(player, self._tip_base_text())
+            self._next_tip_send[player_id] = time.monotonic() + interval
+
+    def _default_tip_interval_seconds(self) -> int:
+        return max(1, int(round(self._plugin_config.status.tip_interval_ticks / 20.0)))
+
+    def _tip_base_text(self) -> str:
+        with self.snapshot_lock:
+            metrics = dict(self._last_game_metrics)
+        tps = self._number(metrics.get("tps"))
+        mspt = self._number(metrics.get("mspt"))
+        tps_color = "§a" if tps >= 19.5 else "§e" if tps >= 18.0 else "§c"
+        mspt_color = "§a" if mspt <= 40.0 else "§e" if mspt <= 50.0 else "§c"
+        return f"§fTPS {tps_color}{tps:.1f} §8| §fMSPT {mspt_color}{mspt:.1f}ms"
+
+    def _send_player_tip(self, player: Player, base: str) -> None:
+        ping = max(0, min(9999, self._integer(getattr(player, "ping", 0))))
+        ping_color = "§a" if ping < 100 else "§e" if ping < 180 else "§c"
+        player.send_tip(f"{base} §8| §fPING {ping_color}{ping}ms")
 
     def update_status(self) -> None:
         """Create a public, immutable snapshot on the Endstone main thread."""
@@ -385,21 +499,31 @@ class ShowStatus(Plugin):
         if not self.is_running or not self._plugin_config.status.tip_enabled:
             return
         try:
-            with self.snapshot_lock:
-                metrics = dict(self._last_game_metrics)
-            tps = self._number(metrics.get("tps"))
-            mspt = self._number(metrics.get("mspt"))
-            tps_color = "§a" if tps >= 19.5 else "§e" if tps >= 18.0 else "§c"
-            mspt_color = "§a" if mspt <= 40.0 else "§e" if mspt <= 50.0 else "§c"
-            base = f"§fTPS {tps_color}{tps:.1f} §8| §fMSPT {mspt_color}{mspt:.1f}ms"
+            now = time.monotonic()
+            base = self._tip_base_text()
+            active_player_ids: set[str] = set()
             for player in list(self.server.online_players):
+                player_id = str(player.unique_id)
+                active_player_ids.add(player_id)
+                interval = self._player_settings.get_tip_interval(
+                    player_id,
+                    default=self._default_tip_interval_seconds(),
+                )
+                if interval is None:
+                    self._next_tip_send.pop(player_id, None)
+                    continue
+                if now < self._next_tip_send.get(player_id, 0.0):
+                    continue
                 try:
-                    ping = max(0, min(9999, self._integer(getattr(player, "ping", 0))))
-                    ping_color = "§a" if ping < 100 else "§e" if ping < 180 else "§c"
-                    player.send_tip(f"{base} §8| §fPING {ping_color}{ping}ms")
+                    self._send_player_tip(player, base)
+                    self._next_tip_send[player_id] = now + interval
                 except Exception:
                     # Disconnecting between enumeration and send_tip is normal.
                     continue
+
+            for player_id in tuple(self._next_tip_send):
+                if player_id not in active_player_ids:
+                    self._next_tip_send.pop(player_id, None)
         except Exception as exc:
             self._report_snapshot_error(exc)
 
@@ -465,7 +589,6 @@ class ShowStatus(Plugin):
 
     def get_web_payload(self) -> dict[str, Any]:
         """Compatibility helper for integrations that called the old method directly."""
-        import json
         return json.loads(self.get_cached_legacy_response().body)
 
     def on_disable(self) -> None:
