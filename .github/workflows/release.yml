@@ -4,6 +4,8 @@ on:
   push:
     tags:
       - "v*"
+    branches:
+      - "release/v*"
   workflow_dispatch:
     inputs:
       tag:
@@ -32,6 +34,26 @@ jobs:
   release:
     runs-on: ubuntu-latest
     steps:
+      - name: Resolve release tag
+        id: release
+        shell: bash
+        env:
+          INPUT_TAG: ${{ github.event.inputs.tag }}
+          REF_TYPE: ${{ github.ref_type }}
+          REF_NAME: ${{ github.ref_name }}
+        run: |
+          if [ -n "$INPUT_TAG" ]; then
+            tag="$INPUT_TAG"
+          elif [ "$REF_TYPE" = "tag" ]; then
+            tag="$REF_NAME"
+          elif [[ "$REF_NAME" == release/v* ]]; then
+            tag="${REF_NAME#release/}"
+          else
+            echo "Unable to resolve release tag from ref: $GITHUB_REF" >&2
+            exit 1
+          fi
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+
       - name: Check out dry-run candidate
         if: github.event_name == 'workflow_dispatch' && inputs.dry_run == true
         uses: actions/checkout@v7
@@ -54,7 +76,7 @@ jobs:
 
       - name: Verify release tag
         env:
-          RELEASE_TAG: ${{ github.event.inputs.tag || github.ref_name }}
+          RELEASE_TAG: ${{ steps.release.outputs.tag }}
         run: |
           python - <<'PY'
           import os
@@ -84,8 +106,8 @@ jobs:
         if: github.event_name != 'workflow_dispatch' || inputs.dry_run != true
         uses: softprops/action-gh-release@v3.0.1
         with:
-          tag_name: ${{ github.event.inputs.tag || github.ref_name }}
-          name: ${{ github.event.inputs.tag || github.ref_name }}
+          tag_name: ${{ steps.release.outputs.tag }}
+          name: ${{ steps.release.outputs.tag }}
           prerelease: ${{ github.event_name == 'workflow_dispatch' && inputs.prerelease || false }}
           generate_release_notes: true
           files: dist/*.whl
