@@ -79,7 +79,7 @@ python -m build --wheel
 The wheel is written to:
 
 ```text
-dist/endstone_show_status-0.2.2-py3-none-any.whl
+dist/endstone_show_status-0.2.3-py3-none-any.whl
 ```
 
 To build both a wheel and source distribution:
