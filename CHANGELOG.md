@@ -4,7 +4,7 @@ All notable changes to this project are documented here.
 
 ## [Unreleased]
 
-## [0.2.2] - 2026-09-30
+## [0.2.3] - 2026-09-30
 
 ### Added
 
@@ -17,6 +17,12 @@ All notable changes to this project are documented here.
 - Keep a single one-second status scheduler and throttle delivery per player instead of creating per-player tasks.
 - Treat `tip_interval_ticks` as the fallback interval for players without a saved preference while `tip_enabled` remains the administrator-wide master switch.
 - Preserve Endstone 0.11 compatibility.
+
+## [0.2.2] - 2026-09-25
+
+### Changed
+
+- Bump the package version to 0.2.2 without functional changes.
 
 ## [0.2.1] - 2026-09-17
 
