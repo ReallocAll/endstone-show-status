@@ -25,6 +25,13 @@ def tip_interval_option_index(interval: int | None) -> int:
     for index, (_, value) in enumerate(TIP_INTERVAL_OPTIONS):
         if value == interval:
             return index
+    if isinstance(interval, int) and not isinstance(interval, bool):
+        numeric = [
+            (index, value)
+            for index, (_, value) in enumerate(TIP_INTERVAL_OPTIONS)
+            if value is not None
+        ]
+        return min(numeric, key=lambda item: abs(item[1] - interval))[0]
     return 0
 
 
@@ -56,8 +63,14 @@ class PlayerSettingsStore:
             for player_id, values in players.items():
                 if not isinstance(player_id, str) or not isinstance(values, dict):
                     continue
-                interval = values.get("tip_interval_seconds")
-                if interval in _ALLOWED_INTERVALS:
+                if "tip_interval_seconds" not in values:
+                    continue
+                interval = values["tip_interval_seconds"]
+                if interval is None or (
+                    isinstance(interval, int)
+                    and not isinstance(interval, bool)
+                    and interval in _ALLOWED_INTERVALS
+                ):
                     self._tip_intervals[player_id] = interval
             return None
 
@@ -66,7 +79,11 @@ class PlayerSettingsStore:
             return self._tip_intervals.get(player_id, default)
 
     def set_tip_interval(self, player_id: str, interval: int | None) -> None:
-        if interval not in _ALLOWED_INTERVALS:
+        if interval is not None and (
+            not isinstance(interval, int)
+            or isinstance(interval, bool)
+            or interval not in _ALLOWED_INTERVALS
+        ):
             raise ValueError(f"Unsupported tip interval: {interval!r}")
         with self._lock:
             self._tip_intervals[player_id] = interval
