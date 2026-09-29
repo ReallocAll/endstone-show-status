@@ -19,6 +19,7 @@ state snapshots are created on the Endstone server thread.
 - TPS, MSPT, player count, uptime, Minecraft/Endstone/plugin versions.
 - Process CPU/RSS plus host CPU, memory, disk, and network throughput.
 - Optional player list and recent chat.
+- Per-player TPS/MSPT/PING HUD frequency controls through the `/showstatus` form.
 - Short rolling history for charts.
 - Rate limiting, per-IP connection limits, bounded client tracking, and temporary
   blocking.
@@ -78,7 +79,7 @@ python -m build --wheel
 The wheel is written to:
 
 ```text
-dist/endstone_show_status-0.2.1-py3-none-any.whl
+dist/endstone_show_status-0.2.2-py3-none-any.whl
 ```
 
 To build both a wheel and source distribution:
@@ -198,6 +199,28 @@ chat_entries = 100
 expose_chat = true
 expose_players = true
 ```
+
+The global `tip_enabled` switch remains authoritative. `tip_interval_ticks` is
+the fallback display interval for players who have not saved a personal
+preference.
+
+### Player status display
+
+Players can run:
+
+```text
+/showstatus
+```
+
+The command is available to all players by default and opens a native Endstone
+modal form. Its step slider runs from **continuous display** on the far left
+through 2, 3, 5, 10, 15, 30, and 60 second intervals to **disabled** on the far
+right.
+
+Preferences are stored by player UUID in
+`plugins/show_status/player_settings.json` and take effect immediately. A
+menu plugin such as ClockMenu only needs to execute `showstatus`; the form and
+persistence remain owned by this plugin.
 
 ### UI
 
