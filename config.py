@@ -78,6 +78,7 @@ auth_password = ""
 [status]
 snapshot_interval_ticks = 20
 tip_enabled = true
+# Default display interval for players who have not saved a personal preference.
 tip_interval_ticks = 20
 system_interval_seconds = 2.0
 history_seconds = 300
