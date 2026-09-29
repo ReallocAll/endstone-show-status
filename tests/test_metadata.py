@@ -24,6 +24,9 @@ class ProjectMetadataTest(unittest.TestCase):
 
         self.assertIn('api_version = "0.11"', source)
         self.assertIn('soft_depend: ClassVar[list[str]] = ["papi"]', source)
+        self.assertIn('"showstatus": {', source)
+        self.assertIn('"default": True', source)
+        self.assertIn("StepSlider(", source)
 
 
 if __name__ == "__main__":
