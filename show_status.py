@@ -147,7 +147,7 @@ class ShowStatus(Plugin):
                 self,
                 self.send_player_tips,
                 delay=self._plugin_config.status.snapshot_interval_ticks,
-                period=20,
+                period=5,
             )
 
         http = self._plugin_config.http
@@ -264,9 +264,9 @@ class ShowStatus(Plugin):
 
     def open_tip_settings(self, player: Player) -> None:
         player_id = str(player.unique_id)
-        current = self._player_settings.get_tip_interval(
+        current = self._player_settings.get_tip_interval_ticks(
             player_id,
-            default=self._default_tip_interval_seconds(),
+            default=self._default_tip_interval_ticks(),
         )
         form = ModalForm(
             title="状态显示设置",
@@ -295,21 +295,21 @@ class ShowStatus(Plugin):
         try:
             values = self._decode_form_values(data)
             index = int(values[0])
-            label, interval = TIP_INTERVAL_OPTIONS[index]
+            label, interval_ticks = TIP_INTERVAL_OPTIONS[index]
         except (IndexError, TypeError, ValueError, json.JSONDecodeError):
             player.send_error_message("无法读取状态显示设置，请重试。")
             return
 
         player_id = str(player.unique_id)
         try:
-            self._player_settings.set_tip_interval(player_id, interval)
+            self._player_settings.set_tip_interval_ticks(player_id, interval_ticks)
         except (OSError, ValueError) as exc:
             self.log_error(f"Unable to save player status preference for {player_id}: {exc}")
             player.send_error_message("状态显示设置保存失败，请联系管理员。")
             return
 
         self._next_tip_send.pop(player_id, None)
-        if interval is None:
+        if interval_ticks is None:
             with suppress(Exception):
                 player.send_tip("")
             player.send_message("§a状态显示已关闭。")
@@ -319,10 +319,10 @@ class ShowStatus(Plugin):
         if self._plugin_config.status.tip_enabled:
             with suppress(Exception):
                 self._send_player_tip(player, self._tip_base_text())
-            self._next_tip_send[player_id] = time.monotonic() + interval
+            self._next_tip_send[player_id] = time.monotonic() + interval_ticks / 20.0
 
-    def _default_tip_interval_seconds(self) -> int:
-        return max(1, int(round(self._plugin_config.status.tip_interval_ticks / 20.0)))
+    def _default_tip_interval_ticks(self) -> int:
+        return max(5, int(self._plugin_config.status.tip_interval_ticks))
 
     def _tip_base_text(self) -> str:
         with self.snapshot_lock:
@@ -505,18 +505,18 @@ class ShowStatus(Plugin):
             for player in list(self.server.online_players):
                 player_id = str(player.unique_id)
                 active_player_ids.add(player_id)
-                interval = self._player_settings.get_tip_interval(
+                interval_ticks = self._player_settings.get_tip_interval_ticks(
                     player_id,
-                    default=self._default_tip_interval_seconds(),
+                    default=self._default_tip_interval_ticks(),
                 )
-                if interval is None:
+                if interval_ticks is None:
                     self._next_tip_send.pop(player_id, None)
                     continue
                 if now < self._next_tip_send.get(player_id, 0.0):
                     continue
                 try:
                     self._send_player_tip(player, base)
-                    self._next_tip_send[player_id] = now + interval
+                    self._next_tip_send[player_id] = now + interval_ticks / 20.0
                 except Exception:
                     # Disconnecting between enumeration and send_tip is normal.
                     continue
