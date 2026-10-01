@@ -27,6 +27,7 @@ class ProjectMetadataTest(unittest.TestCase):
         self.assertIn('"showstatus": {', source)
         self.assertIn('"default": True', source)
         self.assertIn("StepSlider(", source)
+        self.assertNotIn('player.send_tip("")', source)
 
 
 if __name__ == "__main__":

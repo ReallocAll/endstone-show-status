@@ -310,8 +310,6 @@ class ShowStatus(Plugin):
 
         self._next_tip_send.pop(player_id, None)
         if interval_ticks is None:
-            with suppress(Exception):
-                player.send_tip("")
             player.send_message("§a状态显示已关闭。")
             return
 
