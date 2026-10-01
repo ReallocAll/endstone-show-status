@@ -4,6 +4,12 @@ All notable changes to this project are documented here.
 
 ## [Unreleased]
 
+## [0.2.5] - 2026-10-01
+
+### Fixed
+
+- Stop sending an empty `send_tip("")` packet when a player disables the HUD. Disabling now only stops future status-tip delivery, avoiding the disconnect observed on Bedrock clients.
+
 ## [0.2.4] - 2026-09-30
 
 ### Fixed
