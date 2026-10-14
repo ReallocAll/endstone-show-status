@@ -31,7 +31,7 @@ class HTTPConfig:
 class StatusConfig:
     snapshot_interval_ticks: int = 20
     tip_enabled: bool = True
-    tip_interval_ticks: int = 20
+    tip_interval_ticks: int = 0
     system_interval_seconds: float = 2.0
     history_seconds: int = 300
     chat_entries: int = 100
@@ -78,8 +78,8 @@ auth_password = ""
 [status]
 snapshot_interval_ticks = 20
 tip_enabled = true
-# Default display interval for players who have not saved a personal preference.
-tip_interval_ticks = 20
+# Default for players without a personal preference: 0 disables display; positive values are tick intervals.
+tip_interval_ticks = 0
 system_interval_seconds = 2.0
 history_seconds = 300
 chat_entries = 100
@@ -171,7 +171,8 @@ def _clamp(config: PluginConfig) -> None:
     http.auth_password = http.auth_password[:1024]
 
     status.snapshot_interval_ticks = min(200, max(10, status.snapshot_interval_ticks))
-    status.tip_interval_ticks = min(400, max(10, status.tip_interval_ticks))
+    if status.tip_interval_ticks != 0:
+        status.tip_interval_ticks = min(400, max(10, status.tip_interval_ticks))
     status.system_interval_seconds = min(30.0, max(1.0, status.system_interval_seconds))
     status.history_seconds = min(3600, max(60, status.history_seconds))
     status.chat_entries = min(500, max(0, status.chat_entries))
