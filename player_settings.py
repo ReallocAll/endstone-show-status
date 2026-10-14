@@ -7,7 +7,7 @@ from pathlib import Path
 from typing import Final
 
 CONTINUOUS_TIP_INTERVAL_TICKS: Final[int] = 5
-DEFAULT_TIP_INTERVAL_TICKS: Final[int] = 20
+DEFAULT_TIP_INTERVAL_TICKS: Final[int | None] = None
 TIP_INTERVAL_OPTIONS: Final[tuple[tuple[str, int | None], ...]] = (
     ("持续显示", CONTINUOUS_TIP_INTERVAL_TICKS),
     ("每 1 秒", 20),
@@ -103,7 +103,7 @@ class PlayerSettingsStore:
     def get_tip_interval_ticks(
         self,
         player_id: str,
-        default: int = DEFAULT_TIP_INTERVAL_TICKS,
+        default: int | None = DEFAULT_TIP_INTERVAL_TICKS,
     ) -> int | None:
         with self._lock:
             return self._tip_intervals.get(player_id, default)
