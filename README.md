@@ -79,7 +79,7 @@ python -m build --wheel
 The wheel is written to:
 
 ```text
-dist/endstone_show_status-0.2.5-py3-none-any.whl
+dist/endstone_show_status-0.2.6-py3-none-any.whl
 ```
 
 To build both a wheel and source distribution:
@@ -192,7 +192,7 @@ Leaving `auth_password` empty keeps the page public. Set both
 [status]
 snapshot_interval_ticks = 20
 tip_enabled = true
-tip_interval_ticks = 20
+tip_interval_ticks = 0
 system_interval_seconds = 2.0
 history_seconds = 300
 chat_entries = 100
@@ -200,9 +200,12 @@ expose_chat = true
 expose_players = true
 ```
 
-The global `tip_enabled` switch remains authoritative. `tip_interval_ticks` is
-the fallback display interval for players who have not saved a personal
-preference.
+The global `tip_enabled` switch remains authoritative. `tip_interval_ticks = 0`
+means that players without a saved personal preference see no status HUD by
+default, but they can enable it through `/showstatus`. A positive value specifies
+the fallback refresh interval in ticks. Existing saved preferences take precedence.
+When upgrading, change your existing `config.toml` to `tip_interval_ticks = 0` to
+get the new default; the plugin does not overwrite existing configuration files.
 
 ### Player status display
 

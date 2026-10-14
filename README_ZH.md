@@ -70,7 +70,7 @@ python -m build --wheel
 wheel 会写入：
 
 ```text
-dist/endstone_show_status-0.2.5-py3-none-any.whl
+dist/endstone_show_status-0.2.6-py3-none-any.whl
 ```
 
 同时构建 wheel 和源码分发包：
@@ -175,7 +175,7 @@ auth_password = ""
 [status]
 snapshot_interval_ticks = 20
 tip_enabled = true
-tip_interval_ticks = 20
+tip_interval_ticks = 0
 system_interval_seconds = 2.0
 history_seconds = 300
 chat_entries = 100
@@ -183,7 +183,7 @@ expose_chat = true
 expose_players = true
 ```
 
-`tip_enabled` 仍然是管理员全局总开关；`tip_interval_ticks` 则作为尚未保存个人偏好的玩家的默认显示间隔。
+`tip_enabled` 仍然是管理员全局总开关。`tip_interval_ticks = 0` 表示未保存个人设置的玩家默认不显示，仍可通过 `/showstatus` 手动开启；正数表示默认刷新间隔（单位 tick）。已保存的个人设置优先。升级时需手动将现有 `config.toml` 中的 `tip_interval_ticks` 改为 `0`，插件不会覆盖已有配置文件。
 
 ### 玩家状态显示设置
 

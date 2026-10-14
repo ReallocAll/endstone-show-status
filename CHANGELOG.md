@@ -4,6 +4,13 @@ All notable changes to this project are documented here.
 
 ## [Unreleased]
 
+## [0.2.6] - 2026-10-14
+
+### Changed
+
+- Interpret `tip_interval_ticks = 0` as an opt-in HUD default for players without saved preferences; manual enablement still works.
+- Use `0` as the default in new configuration files without overwriting existing files or player settings.
+
 ## [0.2.5] - 2026-10-01
 
 ### Fixed
