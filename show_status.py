@@ -319,8 +319,9 @@ class ShowStatus(Plugin):
                 self._send_player_tip(player, self._tip_base_text())
             self._next_tip_send[player_id] = time.monotonic() + interval_ticks / 20.0
 
-    def _default_tip_interval_ticks(self) -> int:
-        return max(5, int(self._plugin_config.status.tip_interval_ticks))
+    def _default_tip_interval_ticks(self) -> int | None:
+        ticks = self._plugin_config.status.tip_interval_ticks
+        return None if ticks == 0 else max(5, int(ticks))
 
     def _tip_base_text(self) -> str:
         with self.snapshot_lock:
