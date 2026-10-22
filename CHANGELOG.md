@@ -1,3 +1,7 @@
+## 0.2.7 (2026-10-22)
+
+Invalid configuration prevents activation before network/thread/task startup. Chat capture observes final Endstone cancellation and excludes asynchronous or recipient-restricted events. Basic Auth supports UTF-8 credentials. Servers with later Script API moderation must keep expose_chat=false.
+
 # Changelog
 
 All notable changes to this project are documented here.
