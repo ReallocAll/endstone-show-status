@@ -409,8 +409,8 @@ class StatusRequestHandler(BaseHTTPRequestHandler):
             username, supplied_password = decoded.split(":", 1)
         except (binascii.Error, UnicodeDecodeError, ValueError):
             return False
-        return secrets.compare_digest(username, self.server.auth_username) and secrets.compare_digest(
-            supplied_password, password
+        return secrets.compare_digest(username.encode("utf-8"), self.server.auth_username.encode("utf-8")) and secrets.compare_digest(
+            supplied_password.encode("utf-8"), password.encode("utf-8")
         )
 
     def _send_cached(

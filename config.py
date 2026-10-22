@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+import math
 from dataclasses import dataclass, fields
 from pathlib import Path
 from typing import Any, TypeVar
@@ -103,23 +104,33 @@ def _coerce(value: Any, current: T) -> T:
         if isinstance(value, bool):
             return value  # type: ignore[return-value]
         if isinstance(value, str):
-            return (value.strip().lower() not in {"0", "false", "no", "off"})  # type: ignore[return-value]
-        return bool(value)  # type: ignore[return-value]
+            normalized = value.strip().lower()
+            if normalized in {"1", "true", "yes", "on"}:
+                return True  # type: ignore[return-value]
+            if normalized in {"0", "false", "no", "off"}:
+                return False  # type: ignore[return-value]
+        raise ValueError("Expected a boolean")
     if isinstance(current, int) and not isinstance(current, bool):
         return int(value)  # type: ignore[return-value]
     if isinstance(current, float):
-        return float(value)  # type: ignore[return-value]
+        result = float(value)
+        if not math.isfinite(result):
+            raise ValueError("Expected a finite number")
+        return result  # type: ignore[return-value]
     return str(value)  # type: ignore[return-value]
 
 
 def _apply_section(instance: T, values: dict[str, Any]) -> T:
+    if not isinstance(values, dict):
+        raise ValueError("Configuration section must be a table")
     for item in fields(instance):
         if item.name not in values:
             continue
-        try:
-            setattr(instance, item.name, _coerce(values[item.name], getattr(instance, item.name)))
-        except (TypeError, ValueError):
-            continue
+        current = getattr(instance, item.name)
+        value = values[item.name]
+        if type(value) is not type(current) and not (type(current) is float and type(value) is int):
+            raise ValueError(f"Invalid type for configuration field {item.name}")
+        setattr(instance, item.name, _coerce(value, current))
     return instance
 
 
@@ -152,8 +163,8 @@ def _apply_environment(config: PluginConfig) -> None:
             continue
         try:
             setattr(target, attr, _coerce(raw, getattr(target, attr)))
-        except (TypeError, ValueError):
-            continue
+        except (TypeError, ValueError, OverflowError) as exc:
+            raise ValueError(f"Invalid environment setting {env_name}") from exc
 
 
 def _clamp(config: PluginConfig) -> None:
@@ -188,24 +199,32 @@ def load_config(data_folder: Path) -> tuple[PluginConfig, Path, str | None]:
     error: str | None = None
     try:
         data_folder.mkdir(parents=True, exist_ok=True)
-        if not path.exists():
+        if not os.path.lexists(path):
             path.write_text(_DEFAULT_CONFIG, encoding="utf-8")
     except OSError as exc:
         error = f"Unable to create {path}: {exc}"
 
     raw: dict[str, Any] = {}
-    if path.exists():
+    if os.path.lexists(path):
         try:
             with path.open("rb") as stream:
                 raw = tomllib.load(stream)
-        except (OSError, tomllib.TOMLDecodeError) as exc:
+        except (OSError, UnicodeError, tomllib.TOMLDecodeError) as exc:
             error = f"Unable to read {path}: {exc}"
 
-    config = PluginConfig(
-        http=_apply_section(HTTPConfig(), raw.get("http", {})),
-        status=_apply_section(StatusConfig(), raw.get("status", {})),
-        ui=_apply_section(UIConfig(), raw.get("ui", {})),
-    )
-    _apply_environment(config)
-    _clamp(config)
+    # A missing optional field may use its documented default. An unreadable or
+    # malformed existing document must never activate a public default listener.
+    config = PluginConfig(HTTPConfig(), StatusConfig(), UIConfig())
+    if error is None:
+        try:
+            config = PluginConfig(
+                http=_apply_section(HTTPConfig(), raw.get("http", {})),
+                status=_apply_section(StatusConfig(), raw.get("status", {})),
+                ui=_apply_section(UIConfig(), raw.get("ui", {})),
+            )
+            _apply_environment(config)
+            _clamp(config)
+        except (TypeError, ValueError, OverflowError) as exc:
+            error = f"Invalid configuration in {path}: {exc}"
+            config = PluginConfig(HTTPConfig(), StatusConfig(), UIConfig())
     return config, path, error

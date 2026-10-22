@@ -12,7 +12,7 @@ from typing import Any, ClassVar
 import psutil
 from endstone import Player
 from endstone.command import Command, CommandSender
-from endstone.event import PlayerChatEvent, event_handler
+from endstone.event import EventPriority, PlayerChatEvent, event_handler
 from endstone.form import ModalForm, StepSlider
 from endstone.plugin import Plugin
 
@@ -61,8 +61,9 @@ class ShowStatus(Plugin):
         self._data_folder_path = Path(str(folder_value)) if folder_value else Path("plugins/show_status")
         # Plugin.config is an Endstone-owned read-only property; keep typed settings private.
         self._plugin_config, self._config_path, config_error = load_config(self._data_folder_path)
+        self._config_error = config_error
         if config_error:
-            self.log_warning(config_error)
+            self.log_error(config_error)
 
         self._player_settings = PlayerSettingsStore(self._data_folder_path / "player_settings.json")
         settings_error = self._player_settings.load()
@@ -129,6 +130,9 @@ class ShowStatus(Plugin):
             log(message)
 
     def on_enable(self) -> None:
+        if self._config_error:
+            self.log_error("Show Status remains disabled until configuration is repaired and the plugin is reloaded")
+            return
         if self.is_running:
             return
         self.is_running = True
@@ -212,9 +216,18 @@ class ShowStatus(Plugin):
                     return text
         return "--"
 
-    @event_handler
+    @event_handler(priority=EventPriority.MONITOR, ignore_cancelled=True)
     def on_player_chat(self, event: PlayerChatEvent) -> None:
-        if not self._plugin_config.status.expose_chat or self._plugin_config.status.chat_entries <= 0:
+        if event.is_cancelled or not self._plugin_config.status.expose_chat or self._plugin_config.status.chat_entries <= 0:
+            return
+        # Recipient-limited messages are private. Only synchronous events whose
+        # final recipient set includes every online player may reach the web.
+        # MONITOR observers must not modify the event after this decision.
+        if event.is_asynchronous:
+            return
+        online = {str(player.unique_id) for player in self.server.online_players}
+        recipients = {str(player.unique_id) for player in event.recipients}
+        if not online or not online.issubset(recipients):
             return
         entry = {
             "time_ms": int(time.time() * 1000),

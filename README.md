@@ -301,3 +301,25 @@ reverse proxy when exposing it publicly.
 ## License
 
 This project is licensed under the [GNU GPL-3.0](LICENSE).
+
+### Configuration and chat publication safety
+
+Malformed, unreadable or incorrectly typed existing configuration prevents plugin
+activation, including HTTP listeners and background tasks. Fix the file and reload
+the plugin; an invalid file is never replaced with public defaults. Missing optional
+fields still use documented defaults, and a first install creates the default file.
+Environment booleans accept true/false, yes/no, on/off and 1/0; invalid overrides
+also block activation. TOML values must use their declared native types.
+
+Web chat observes accepted synchronous messages at MONITOR priority and only
+publishes messages whose final recipients include every currently online player.
+Cancelled, recipient-restricted and asynchronous events are omitted. Moderation
+plugins must finish changes before MONITOR, as required by the event contract.
+This is a recipient-coverage policy; custom private-channel plugins that leave all
+players in recipients must disable chat exposure or cancel/restrict those events.
+Basic Auth supports UTF-8 usernames and passwords. Use HTTPS at the reverse proxy
+for credential confidentiality.
+Endstone dispatches this event before downstream Script API chat handlers; this
+plugin cannot observe a later Script API cancellation. Servers relying on that
+moderation boundary should keep expose_chat=false until a final-delivery signal
+is available and verified in their runtime.
