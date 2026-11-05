@@ -4,15 +4,14 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "endstone-show-status"
-version = "0.2.7"
-description = "Public Endstone server status page"
+version = "0.3.0"
+description = "Configurable in-game TPS/MSPT/PING HUD for Endstone"
 readme = "README.md"
 license = "GPL-3.0-only"
 license-files = ["LICENSE"]
 requires-python = ">=3.10"
 dependencies = [
     "endstone>=0.11",
-    "psutil>=5",
     "tomli>=2; python_version < '3.11'",
 ]
 
@@ -25,8 +24,5 @@ Issues = "https://github.com/ReallocAll/endstone-show-status/issues"
 show_status = "endstone_show_status:ShowStatus"
 
 [tool.setuptools]
-packages = ["endstone_show_status", "endstone_show_status.webui"]
-package-dir = {endstone_show_status = ".", "endstone_show_status.webui" = "webui"}
-
-[tool.setuptools.package-data]
-"endstone_show_status.webui" = ["*.html", "*.css", "*.js", "*.svg"]
+packages = ["endstone_show_status"]
+package-dir = {endstone_show_status = "."}

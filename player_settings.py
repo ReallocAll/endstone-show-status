@@ -116,8 +116,17 @@ class PlayerSettingsStore:
         ):
             raise ValueError(f"Unsupported tip interval: {interval_ticks!r}")
         with self._lock:
+            previous = self._tip_intervals.get(player_id)
+            existed = player_id in self._tip_intervals
             self._tip_intervals[player_id] = interval_ticks
-            self._write_locked()
+            try:
+                self._write_locked()
+            except OSError:
+                if existed:
+                    self._tip_intervals[player_id] = previous
+                else:
+                    self._tip_intervals.pop(player_id, None)
+                raise
 
     def _write_locked(self) -> None:
         self.path.parent.mkdir(parents=True, exist_ok=True)

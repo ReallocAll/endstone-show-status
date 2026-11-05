@@ -1,61 +1,12 @@
-## 0.2.7 (2026-10-22)
-
-Invalid configuration prevents activation before network/thread/task startup. Chat capture observes final Endstone cancellation and excludes asynchronous or recipient-restricted events. Basic Auth supports UTF-8 credentials. Servers with later Script API moderation must keep expose_chat=false.
-
 # Changelog
 
-All notable changes to this project are documented here.
+## 0.3.0 (2026-11-05)
 
-## [Unreleased]
+- Split the public HTTP API into [endstone-status-api](https://github.com/ReallocAll/endstone-status-api).
+- Retain the in-game HUD, form, and UUID-based preferences; remove the web UI, legacy endpoints, HTTP/auth/security collectors, system metrics, Spark dependency, and irrelevant configuration.
+- Read TPS/MSPT directly from Endstone; use a dedicated, strict `hud.toml` configuration.
+- Preserve existing player settings in their original location. No old HTTP API compatibility.
 
-## [0.2.6] - 2026-10-14
+## Earlier releases
 
-### Changed
-
-- Interpret `tip_interval_ticks = 0` as an opt-in HUD default for players without saved preferences; manual enablement still works.
-- Use `0` as the default in new configuration files without overwriting existing files or player settings.
-
-## [0.2.5] - 2026-10-01
-
-### Fixed
-
-- Stop sending an empty `send_tip("")` packet when a player disables the HUD. Disabling now only stops future status-tip delivery, avoiding the disconnect observed on Bedrock clients.
-
-## [0.2.4] - 2026-09-30
-
-### Fixed
-
-- Refresh the continuous TPS/MSPT/PING tip every 5 ticks so the Bedrock client does not fade it out between updates.
-- Run the shared player-tip scheduler every 5 ticks while retaining per-player throttling for slower intervals.
-- Store player display intervals in ticks and migrate v0.2.3 `tip_interval_seconds` preferences automatically.
-- Add an explicit 1-second interval between continuous mode and the slower presets.
-
-## [0.2.3] - 2026-09-30
-
-### Added
-
-- Add the player-accessible `/showstatus` command with an Endstone `StepSlider` form.
-- Add per-player TPS/MSPT/PING display intervals: continuous, 2, 3, 5, 10, 15, 30, or 60 seconds, plus disabled.
-- Persist player preferences by UUID in `player_settings.json`.
-
-### Changed
-
-- Keep a single one-second status scheduler and throttle delivery per player instead of creating per-player tasks.
-- Treat `tip_interval_ticks` as the fallback interval for players without a saved preference while `tip_enabled` remains the administrator-wide master switch.
-- Preserve Endstone 0.11 compatibility.
-
-## [0.2.2] - 2026-09-25
-
-### Changed
-
-- Bump the package version to 0.2.2 without functional changes.
-
-## [0.2.1] - 2026-09-17
-
-### Added
-
-- Include Spark's rolling system CPU metric in status snapshots when available.
-
-### Changed
-
-- Pin the runtime dependency to Endstone 0.11.11 and retain Python 3.10 support.
+The historical changelog is available in Git history and the existing GitHub releases.
